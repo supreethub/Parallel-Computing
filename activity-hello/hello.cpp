@@ -1,6 +1,6 @@
 #include<unistd.h>
 #include<iostream>
-#include<string>
+
 int main () 
 {
   char hostName[1024];
