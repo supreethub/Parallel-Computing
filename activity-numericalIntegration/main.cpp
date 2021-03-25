@@ -40,30 +40,29 @@ int main (int argc, char* argv[]) {
     functionTerm = a + ((i + 0.5) * term1);
       switch (functionID)
       {
-      case 1:
-      {
-        funcVal = f1(functionTerm, intensity); 
-        break;
+        case 1:
+        {
+          funcVal = f1(functionTerm, intensity); 
+          break;
+        }
+        case 2:
+        {
+          funcVal = f2(functionTerm, intensity);
+          break;
+        }
+        case 3:
+        {
+          funcVal = f3(functionTerm, intensity);
+          break;
+        }
+        case 4:
+        {
+          funcVal = f4(functionTerm, intensity);
+          break;
+        }
+        default:
+          break;
       }
-      case 2:
-      {
-        funcVal = f2(functionTerm, intensity);
-        break;
-      }
-      case 3:
-      {
-        funcVal = f3(functionTerm, intensity);
-        break;
-      }
-      case 4:
-      {
-        funcVal = f4(functionTerm, intensity);
-        break;
-      }
-      default:
-        break;
-    
-    }
     sum = sum + funcVal;
   }
   auto end = std::chrono::high_resolution_clock::now();
