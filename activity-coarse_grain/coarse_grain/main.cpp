@@ -2,8 +2,8 @@
 #include <fstream>
 #include <sstream>
 #include <vector>
-#include<thread>
-#include<mutex>
+#include <thread>
+#include <mutex>
 
 #include "Dictionary.hpp"
 #include "MyHashtable.hpp"
@@ -47,9 +47,9 @@ std::vector<std::vector<std::string>> tokenizeLyrics(const std::vector<std::stri
   return ret;
 }
 
-void countwords(std::vector<std::string>& words, Dictionary<std::string, int>& dct, std::mutex& mu)
+void countwords(std::vector<std::string> words, Dictionary<std::string, int> & dct, std::mutex & mu)
 {
-
+  std::lock_guard<std::mutex> lg(mu);
   for(auto& w: words)
   {
     int count = dct.get(w);
@@ -91,17 +91,13 @@ int main(int argc, char **argv)
   // Start Timer
   auto start =std::chrono::steady_clock::now();
 
-  for(auto& filecontent:wordmap)
+  for(auto & filecontent : wordmap)
   {
-    std::thread filethread(countwords,filecontent, ref(ht), ref(mu));
-    allfiles.push_back(std::move(filethread));
+    allfiles.push_back(std::thread(countwords,filecontent, ref(ht), ref(mu)));
   }
 
-  for(auto &t: allfiles) {
-    if(t.joinable())
+  for(auto & t: allfiles) {
       t.join();
-    else
-      std::cout<<"Not joinable"<<std::endl;
   }
   // write code here
   auto stop = std::chrono::steady_clock::now();
@@ -109,8 +105,8 @@ int main(int argc, char **argv)
 
 
 
-  // Check Hash Table Values 
-  // (you can uncomment, but this must be commented out for tests)
+  //Check Hash Table Values 
+  //(you can uncomment, but this must be commented out for tests)
   // for (auto it : dict) {
   //   if (it.second > thresholdCount)
   //     std::cout << it.first << " " << it.second << std::endl;
