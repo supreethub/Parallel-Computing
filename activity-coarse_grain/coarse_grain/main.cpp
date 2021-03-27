@@ -99,7 +99,7 @@ int main(int argc, char **argv)
   for(auto & t: allfiles) {
       t.join();
   }
-  // write code here
+
   auto stop = std::chrono::steady_clock::now();
   std::chrono::duration<double> time_elapsed = stop-start;
 
