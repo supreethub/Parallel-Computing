@@ -91,9 +91,9 @@ int main(int argc, char **argv)
   // Start Timer
   auto start =std::chrono::steady_clock::now();
 
-  for(auto & filecontent : wordmap)
+  for(int i = 0; i<wordmap.size();++i)
   {
-    allfiles.push_back(std::thread(countwords,filecontent, ref(ht), ref(mu)));
+    allfiles.push_back(std::thread(countwords,wordmap.at(i), ref(ht), ref(mu)));
   }
 
   for(auto & t: allfiles) {
