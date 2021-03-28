@@ -104,7 +104,9 @@ int main(int argc, char **argv)
   std::chrono::duration<double> time_elapsed = stop-start;
 
 
+  std::cerr << time_elapsed.count()<<"\n";
 
+  
   //Check Hash Table Values 
   //(you can uncomment, but this must be commented out for tests)
   // for (auto it : dict) {
