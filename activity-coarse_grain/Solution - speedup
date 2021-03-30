@@ -1,0 +1,6 @@
+The speedup for coarse-grain is the way it is because it essentially works similar to its sequential code. 
+
+For each file, a thread is spawned for word count and a mutex reference is passed along to its function. A lockguard is created within the function which takes ownership of the mutex passed.
+A lockguard releases the mutex only when the control leaves the scope block (in this case, the countword function). (control leaves scope when all the words in that file have been counted and written to hashtable)
+
+Hence, each thread needs to wait for the mutex to be released before the word count for that file can begin, which resembles sequential execution.

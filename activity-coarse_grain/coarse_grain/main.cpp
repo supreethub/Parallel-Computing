@@ -49,9 +49,10 @@ std::vector<std::vector<std::string>> tokenizeLyrics(const std::vector<std::stri
 
 void countwords(std::vector<std::string> words, Dictionary<std::string, int> & dct, std::mutex & mu)
 {
-  std::lock_guard<std::mutex> lg(mu);
+  
   for(auto& w: words)
   {
+    std::lock_guard<std::mutex> lg(mu);
     int count = dct.get(w);
     ++count;
     dct.set(w,count);
