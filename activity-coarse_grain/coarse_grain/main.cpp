@@ -51,12 +51,11 @@ void countwords(std::vector<std::string> words, Dictionary<std::string, int> & d
 {  
   for(auto& w: words)
   {
-    
     int count = dct.get(w);
     ++count;
-    std::lock_guard<std::mutex> lg(mu);
+    mu.lock();
     dct.set(w,count);
-
+    mu.unlock();
   }
 }
 
