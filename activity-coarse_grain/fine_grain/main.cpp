@@ -2,6 +2,7 @@
 #include <fstream>
 #include <sstream>
 #include <vector>
+#include<thread>
 
 #include "Dictionary.hpp"
 #include "MyHashtable.hpp"
@@ -46,6 +47,21 @@ std::vector<std::vector<std::string>> tokenizeLyrics(const std::vector<std::stri
 }
 
 
+void countwords(vector<string> filecontent, HashTable<string, int> &ht, HashTable<string, int> &result)
+{
+  for (auto &w : filecontent)
+  {
+    ht.update(w);
+  }
+  vector<HashNode<string, int>*> entries = ht.getEntries();
+  for (auto &entry : entries)
+  {
+    result.update(entry->getKey(), entry->getValue());
+  }
+  ht.clear();
+}
+
+
 
 int main(int argc, char **argv)
 {
@@ -70,20 +86,23 @@ int main(int argc, char **argv)
   // Tokenize Lyrics
   auto wordmap = tokenizeLyrics(files);
 
-  MyHashtable<std::string, int> ht;
-  Dictionary<std::string, int>& dict = ht;
+  HashTable<std::string, int>* ht = new HashTable <std::string, int>[wordmap.size()];
+  HashTable<std::string, int> result;
 
+  vector<std::thread> filethreads;
+  auto start = chrono::steady_clock::now();
+  for (int i = 0; i < wordmap.size(); i++)
+  {
+    filethreads.push_back(thread(countwords, wordmap.at(i), ref(ht[i]), ref(result)));
+  }
 
+  for (auto &t : filethreads)
+  {
+    t.join();
+  }
 
-  // write code here
-
-
-
-
-
-
-
-
+  auto stop = chrono::steady_clock::now();
+  chrono::duration<double> time_elapsed = stop - start;
 
 
   // Check Hash Table Values 
@@ -95,7 +114,7 @@ int main(int argc, char **argv)
   */
 
   // Do not touch this, need for test cases
-  std::cout << ht.get(testWord) << std::endl;
+  std::cout << result.get(testWord) << std::endl;
 
   return 0;
 }
