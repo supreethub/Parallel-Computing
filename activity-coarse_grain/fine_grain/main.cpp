@@ -3,7 +3,7 @@
 #include <sstream>
 #include <vector>
 #include<thread>
-
+#include<mutex>
 #include "Dictionary.hpp"
 #include "MyHashtable.hpp"
 
@@ -93,7 +93,7 @@ int main(int argc, char **argv)
   auto start = chrono::steady_clock::now();
   for (int i = 0; i < wordmap.size(); i++)
   {
-    filethreads.push_back(thread(countwords, wordmap.at(i), ref(ht[i]), ref(result)));
+    filethreads.push_back(std::thread(countwords, wordmap.at(i), ref(ht[i]), ref(result)));
   }
 
   for (auto &t : filethreads)
