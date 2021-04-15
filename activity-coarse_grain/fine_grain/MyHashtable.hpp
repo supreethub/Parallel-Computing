@@ -1,181 +1,220 @@
-#ifndef _MY_HASHTABLE_H
-#define _MY_HASHTABLE_H
+#ifndef _MY_HASHTABLE_H_
+#define _MY_HASHTABLE_H_
 
-#include <functional>
+#include <cstdint>
 #include <iostream>
-#include <vector>
+#include <functional>
+#include <mutex>
+#include <shared_mutex>
+// #include "HashNode.h"
+using namespace std;
 
-template<class K, class V>
-struct Node {
-  K key;
-  V value;
-  Node* next;
-
-  Node(const K& key, const V& value)
-    : key(key), value(value), next(nullptr)
-  {}
-
-  Node() = default;
-  ~Node() = default;
+// mutex wrapper since creating vector of shared_time_mutex was not possible.
+class mutex_wrapper
+{
+public:
+    mutable shared_timed_mutex mu;
 };
 
-template<class K, class V>
-class MyHashtable : public Dictionary<K, V> {
-protected:
-  typedef typename Dictionary<K, V>::dict_iter dict_iter;
-
-  int capacity;
-  int count;
-  double loadFactor;
-  std::vector<Node<K,V>*> table;
-
-  struct hashtable_iter : public dict_iter {
-    MyHashtable& mt;
-    int bucket;
-    Node<K,V>* cur;
-
-    hashtable_iter() = default;
-    virtual ~hashtable_iter() = default;
-
-    void advance() {
-      if (cur != nullptr) {
-        cur = cur->next;
-      }
-      
-      if (cur == nullptr) {
-	      if (bucket == mt.capacity) return;
-	      bucket++;
-	      //need to advance to the next valid entry
-	      while (bucket < mt.capacity && mt.table[bucket] == nullptr) {
-	        bucket++;
-	      }
-	      if (bucket < mt.capacity) cur = mt.table[bucket];
-	      else cur = nullptr;
-      }
-    }
-
-    hashtable_iter (MyHashtable& myhash, int buck, Node<K,V>*ptr)
-      : mt(myhash), bucket(buck), cur(ptr) {
-      if (cur == nullptr) advance();
-    }
-
-    
-    virtual bool operator==(dict_iter& ite) {
-      hashtable_iter& a = dynamic_cast<hashtable_iter&>(ite);
-      return bucket == a.bucket && cur == a.cur;
-    }
-    virtual bool operator!=(dict_iter& ite) {
-      hashtable_iter& a = dynamic_cast<hashtable_iter&>(ite);
-      return bucket != a.bucket || cur != a.cur;
-    }
-    virtual dict_iter& operator++() {
-      advance();
-      return *this;
-    }
-    virtual std::pair<K,V> operator*() {
-      return std::make_pair(cur->key, cur->value);
-    }
-  };
-
-  void resize(int capacity) {
-    //Note that this function works by creating a brand new hashtable
-    //and stealing its data at the end. This causes more memory
-    //allocation than are really necessary as we could reuse all the
-    //node objects without having a create a single new one.
-    auto temp_table = MyHashtable(capacity, this->loadFactor);
-
-    for (auto node : this->table) {
-      while (node != nullptr) {
-	      temp_table.set(node->key, node->value);
-	        if (node->next == nullptr) break;
-          node = node->next;
-      }
-    }
-    //It is important to swap because we want the nodes in this and in
-    //temp_table to be swapped so as to free the memory appropriately.
-    std::swap(this->capacity, temp_table.capacity);
-    std::swap(this->table, temp_table.table); 
-  }
-
+//Node that holds key and value
+template <typename K, typename V>
+class HashNode
+{
 public:
-  /**
-   * Returns the node at key
-   * @param key key of node to get
-   * @return node of type Node at key
-   */
-  virtual V get(const K& key) const {
-    std::size_t index = std::hash<K>{}(key) % this->capacity;
-    index = index < 0 ? index + this->capacity : index;
-    const Node<K,V>* node = this->table[index];
-
-    while (node != nullptr) {
-      if (node->key == key)
-	      return node->value;
-      node = node->next;
+    HashNode(K key_, V value_) : next(nullptr), key(key_), value(value_)
+    {
     }
-    return V();
-  }
-
-  /**
-   * sets the value of node at key with value
-   * @param key key of node to be set
-   * @param value new value of node
-   */
-  virtual void set(const K& key, const V& value) {
-    std::size_t index = std::hash<K>{}(key) % this->capacity;
-    index = index < 0 ? index + this->capacity : index;
-    Node<K,V>* node = this->table[index];
-    
-    while (node != nullptr) {
-      if (node->key == key) {
-	      node->value = value;
-	      return;
-      }
-      node = node->next;
+    ~HashNode()
+    {
+        next = nullptr;
     }
 
-    //if we get here, then the key has not been found
-    node = new Node<K,V>(key, value);
-    node->next = this->table[index];
-    this->table[index] = node;
-    this->count++;
-    if (((double)this->count)/this->capacity > this->loadFactor) {
-      this->resize(this->capacity * 2);
+    const K &getKey() const { return key; }
+    void setValue(V value_) { value = value_; }
+    const V &getValue() const { return value; }
+
+    HashNode *next;
+
+private:
+    K key;
+    V value;
+};
+
+//bucket which holds linked list of HashNodes whose hash of key collided.
+template <typename K, typename V>
+class HashBucket
+{
+public:
+    HashBucket() : head(nullptr)
+    {
     }
-  }
 
-  /**
-   * deletes the node at given key
-   * @param key key of node to be deleted
-   */
-  virtual void deleteKey(const K& key) {
-  }
+    V find(const K &key, shared_timed_mutex &mutex_) const
+    {
+        shared_lock<shared_timed_mutex> lock(mutex_);
+        HashNode<K, V> *node = head;
 
-  MyHashtable(): MyHashtable(100000, 10.0) {}
-  MyHashtable(int capacity): MyHashtable(capacity, 10.0) {}
-  MyHashtable(int capacity, double loadFactor): capacity(capacity), count(0), loadFactor(loadFactor) {
-    
-    this->table.resize(capacity, nullptr);
-  }
-
-  virtual ~MyHashtable() {    
-    for (auto p : table) {
-      auto cur = p;
-      while (cur != nullptr) {
-	      auto n = cur->next;
-	      delete cur;
-	      cur = n;
-      }
+        while (node != nullptr)
+        {
+            if (node->getKey() == key)
+            {
+                return node->getValue();
+            }
+            node = node->next;
+        }
+        return 0;
     }
-  }
 
-  virtual std::unique_ptr<dict_iter> realBegin() {
-    return std::make_unique<hashtable_iter>(*this, 0, table[0]);
-  }
+    void update(const K &key, shared_timed_mutex &mutex_)
+    {
+        unique_lock<shared_timed_mutex> lock(mutex_);
+        HashNode<K, V> *prev = nullptr;
+        HashNode<K, V> *node = head;
 
-  virtual std::unique_ptr<dict_iter> realEnd() {
-    return std::make_unique<hashtable_iter>(*this, capacity, nullptr);
-  }
+        while (node != nullptr && node->getKey() != key)
+        {
+            prev = node;
+            node = node->next;
+        }
+
+        if (nullptr == node)
+        {
+            if (nullptr == head)
+            {
+                head = new HashNode<K, V>(key, 1);
+            }
+            else
+            {
+                prev->next = new HashNode<K, V>(key, 1);
+            }
+        }
+        else
+        {
+            int count = node->getValue();
+            node->setValue(++count);
+        }
+    }
+
+    void update(const K &key, const V &value, shared_timed_mutex &mutex_)
+    {
+        unique_lock<shared_timed_mutex> lock(mutex_);
+        HashNode<K, V> *prev = nullptr;
+        HashNode<K, V> *node = head;
+
+        while (node != nullptr && node->getKey() != key)
+        {
+            prev = node;
+            node = node->next;
+        }
+
+        if (nullptr == node)
+        {
+            if (nullptr == head)
+            {
+                head = new HashNode<K, V>(key, value);
+            }
+            else
+            {
+                prev->next = new HashNode<K, V>(key, value);
+            }
+        }
+        else
+        {
+            int count = node->getValue();
+            node->setValue(value + count);
+        }
+    }
+
+    vector<HashNode<K, V>*> getAllNodes()
+    {
+        HashNode<K, V> *node = head;
+        vector<HashNode<K, V>*> res;
+        while (node != nullptr)
+        {
+            res.push_back(new HashNode(node->getKey(), node->getValue()));
+
+            node = node->next;
+        }
+        return res;
+    }
+
+    void clear()
+            {
+                //Exclusive lock to enable single write in the bucket
+                // std::unique_lock<std::shared_timed_mutex> lock(mutex_);
+                HashNode<K, V> * prev = nullptr;
+                HashNode<K, V> * node = head;
+                while(node != nullptr)
+                {
+                    prev = node;
+                    node = node->next;
+                    delete prev;
+                }
+                head = nullptr;
+            }
+
+private:
+    HashNode<K, V> *head;
+};
+
+template <typename K, typename V, typename F = std::hash<K>>
+class HashTable
+{
+public:
+    HashTable(size_t hashSize_ = 100000) : hashSize(hashSize_)
+    {
+        hashEntries = new HashBucket<K, V>[hashSize];
+        mu_wrapper = new mutex_wrapper[MAX_MUTEX];
+    }
+
+    HashTable(const HashTable &) = delete;
+    HashTable(HashTable &&) = delete;
+    HashTable &operator=(const HashTable &) = delete;
+    HashTable &operator=(HashTable &&) = delete;
+
+    V get(const K &key) const
+    {
+        size_t hashValue = hashFn(key) % hashSize;
+        V res = hashEntries[hashValue].find(key, mu_wrapper[hashValue % MAX_MUTEX].mu);
+        return res;
+    }
+
+    void update(const K &key)
+    {
+        size_t hashValue = hashFn(key) % hashSize;
+        hashEntries[hashValue].update(key, mu_wrapper[hashValue % MAX_MUTEX].mu);
+    }
+
+    void update(const K &key, const V &value)
+    {
+        size_t hashValue = hashFn(key) % hashSize;
+        hashEntries[hashValue].update(key, value, mu_wrapper[hashValue % MAX_MUTEX].mu);
+    }
+
+    vector<HashNode<K, V>*> getEntries()
+    {
+        vector<HashNode<K, V>*> ret;
+        for (int i = 0; i < hashSize; i++)
+        {
+            HashBucket<K, V> bucket = hashEntries[i];
+            vector<HashNode<K, V>*> nodes = bucket.getAllNodes();
+            ret.insert(ret.end(), nodes.begin(), nodes.end());
+        }
+        return ret;
+    }
+
+    void clear() {
+for (int i = 0; i < hashSize; i++) {
+    hashEntries[i].clear();
+}
+    }
+
+private:
+    HashBucket<K, V> *hashEntries;
+    F hashFn;
+    const size_t hashSize;
+    size_t MAX_MUTEX = 256;
+    mutex_wrapper *mu_wrapper;
 };
 
 #endif
