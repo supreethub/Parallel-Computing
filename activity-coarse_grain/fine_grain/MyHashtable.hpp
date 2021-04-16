@@ -6,25 +6,17 @@
 #include <functional>
 #include <mutex>
 #include <shared_mutex>
-// #include "HashNode.h"
 using namespace std;
 
-// mutex wrapper since creating vector of shared_time_mutex was not possible.
-class mutex_wrapper
-{
-public:
-    mutable shared_timed_mutex mu;
-};
 
-//Node that holds key and value
 template <typename K, typename V>
-class HashNode
+class Node
 {
 public:
-    HashNode(K key_, V value_) : next(nullptr), key(key_), value(value_)
+    Node(K key_, V value_) : next(nullptr), key(key_), value(value_)
     {
     }
-    ~HashNode()
+    ~Node()
     {
         next = nullptr;
     }
@@ -33,26 +25,32 @@ public:
     void setValue(V value_) { value = value_; }
     const V &getValue() const { return value; }
 
-    HashNode *next;
+    Node *next;
 
 private:
     K key;
     V value;
 };
 
-//bucket which holds linked list of HashNodes whose hash of key collided.
-template <typename K, typename V>
-class HashBucket
+class mutex_class
 {
 public:
-    HashBucket() : head(nullptr)
+    mutable shared_timed_mutex mu;
+};
+
+//collision handle using LL
+template <typename K, typename V>
+class HashLL
+{
+public:
+    HashLL() : head(nullptr)
     {
     }
 
     V find(const K &key, shared_timed_mutex &mutex_) const
     {
         shared_lock<shared_timed_mutex> lock(mutex_);
-        HashNode<K, V> *node = head;
+        Node<K, V> *node = head;
 
         while (node != nullptr)
         {
@@ -68,8 +66,8 @@ public:
     void update(const K &key, shared_timed_mutex &mutex_)
     {
         unique_lock<shared_timed_mutex> lock(mutex_);
-        HashNode<K, V> *prev = nullptr;
-        HashNode<K, V> *node = head;
+        Node<K, V> *prev = nullptr;
+        Node<K, V> *node = head;
 
         while (node != nullptr && node->getKey() != key)
         {
@@ -81,11 +79,11 @@ public:
         {
             if (nullptr == head)
             {
-                head = new HashNode<K, V>(key, 1);
+                head = new Node<K, V>(key, 1);
             }
             else
             {
-                prev->next = new HashNode<K, V>(key, 1);
+                prev->next = new Node<K, V>(key, 1);
             }
         }
         else
@@ -98,8 +96,8 @@ public:
     void update(const K &key, const V &value, shared_timed_mutex &mutex_)
     {
         unique_lock<shared_timed_mutex> lock(mutex_);
-        HashNode<K, V> *prev = nullptr;
-        HashNode<K, V> *node = head;
+        Node<K, V> *prev = nullptr;
+        Node<K, V> *node = head;
 
         while (node != nullptr && node->getKey() != key)
         {
@@ -111,11 +109,11 @@ public:
         {
             if (nullptr == head)
             {
-                head = new HashNode<K, V>(key, value);
+                head = new Node<K, V>(key, value);
             }
             else
             {
-                prev->next = new HashNode<K, V>(key, value);
+                prev->next = new Node<K, V>(key, value);
             }
         }
         else
@@ -125,13 +123,13 @@ public:
         }
     }
 
-    vector<HashNode<K, V>*> getAllNodes()
+    vector<Node<K, V>*> getNodes()
     {
-        HashNode<K, V> *node = head;
-        vector<HashNode<K, V>*> res;
+        Node<K, V> *node = head;
+        vector<Node<K, V>*> res;
         while (node != nullptr)
         {
-            res.push_back(new HashNode(node->getKey(), node->getValue()));
+            res.push_back(new Node(node->getKey(), node->getValue()));
 
             node = node->next;
         }
@@ -140,10 +138,9 @@ public:
 
     void clear()
             {
-                //Exclusive lock to enable single write in the bucket
-                // std::unique_lock<std::shared_timed_mutex> lock(mutex_);
-                HashNode<K, V> * prev = nullptr;
-                HashNode<K, V> * node = head;
+                
+                Node<K, V> * prev = nullptr;
+                Node<K, V> * node = head;
                 while(node != nullptr)
                 {
                     prev = node;
@@ -154,50 +151,56 @@ public:
             }
 
 private:
-    HashNode<K, V> *head;
+    Node<K, V> *head;
 };
 
 template <typename K, typename V, typename F = std::hash<K>>
-class HashTable
+class HTable
 {
+    private:
+    HashLL<K, V> *hashEntries;
+    F hashFunc;
+    const size_t hashSize;
+    size_t MAX_MUTEX = 256;
+    mutex_class *mu_wrapper;
 public:
-    HashTable(size_t hashSize_ = 100000) : hashSize(hashSize_)
+    HTable(size_t hashSize_ = 100000) : hashSize(hashSize_)
     {
-        hashEntries = new HashBucket<K, V>[hashSize];
-        mu_wrapper = new mutex_wrapper[MAX_MUTEX];
+        hashEntries = new HashLL<K, V>[hashSize];
+        mu_wrapper = new mutex_class[MAX_MUTEX];
     }
 
-    HashTable(const HashTable &) = delete;
-    HashTable(HashTable &&) = delete;
-    HashTable &operator=(const HashTable &) = delete;
-    HashTable &operator=(HashTable &&) = delete;
+    HTable(const HTable &) = delete;
+    HTable(HTable &&) = delete;
+    HTable &operator=(const HTable &) = delete;
+    HTable &operator=(HTable &&) = delete;
 
     V get(const K &key) const
     {
-        size_t hashValue = hashFn(key) % hashSize;
+        size_t hashValue = hashFunc(key) % hashSize;
         V res = hashEntries[hashValue].find(key, mu_wrapper[hashValue % MAX_MUTEX].mu);
         return res;
     }
 
     void update(const K &key)
     {
-        size_t hashValue = hashFn(key) % hashSize;
+        size_t hashValue = hashFunc(key) % hashSize;
         hashEntries[hashValue].update(key, mu_wrapper[hashValue % MAX_MUTEX].mu);
     }
 
     void update(const K &key, const V &value)
     {
-        size_t hashValue = hashFn(key) % hashSize;
+        size_t hashValue = hashFunc(key) % hashSize;
         hashEntries[hashValue].update(key, value, mu_wrapper[hashValue % MAX_MUTEX].mu);
     }
 
-    vector<HashNode<K, V>*> getEntries()
+    vector<Node<K, V>*> getEntries()
     {
-        vector<HashNode<K, V>*> ret;
+        vector<Node<K, V>*> ret;
         for (int i = 0; i < hashSize; i++)
         {
-            HashBucket<K, V> bucket = hashEntries[i];
-            vector<HashNode<K, V>*> nodes = bucket.getAllNodes();
+            HashLL<K, V> bucket = hashEntries[i];
+            vector<Node<K, V>*> nodes = bucket.getNodes();
             ret.insert(ret.end(), nodes.begin(), nodes.end());
         }
         return ret;
@@ -206,15 +209,9 @@ public:
     void clear() {
 for (int i = 0; i < hashSize; i++) {
     hashEntries[i].clear();
-}
     }
+}
 
-private:
-    HashBucket<K, V> *hashEntries;
-    F hashFn;
-    const size_t hashSize;
-    size_t MAX_MUTEX = 256;
-    mutex_wrapper *mu_wrapper;
 };
 
 #endif

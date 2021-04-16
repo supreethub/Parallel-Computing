@@ -47,16 +47,16 @@ std::vector<std::vector<std::string>> tokenizeLyrics(const std::vector<std::stri
 }
 
 
-void countwords(vector<string> filecontent, HashTable<string, int> &ht, HashTable<string, int> &result)
+void countwords(vector<string> filecontent, HashTable<string, int> &ht, HashTable<string, int> &res)
 {
   for (auto &w : filecontent)
   {
     ht.update(w);
   }
-  vector<HashNode<string, int>*> entries = ht.getEntries();
+  vector<Node<string, int>*> entries = ht.getEntries();
   for (auto &entry : entries)
   {
-    result.update(entry->getKey(), entry->getValue());
+    res.update(entry->getKey(), entry->getValue());
   }
   ht.clear();
 }
@@ -87,13 +87,13 @@ int main(int argc, char **argv)
   auto wordmap = tokenizeLyrics(files);
 
   HashTable<std::string, int>* ht = new HashTable <std::string, int>[wordmap.size()];
-  HashTable<std::string, int> result;
+  HashTable<std::string, int> res;
 
   vector<std::thread> filethreads;
   auto start = chrono::steady_clock::now();
   for (int i = 0; i < wordmap.size(); i++)
   {
-    filethreads.push_back(std::thread(countwords, wordmap.at(i), ref(ht[i]), ref(result)));
+    filethreads.push_back(std::thread(countwords, wordmap.at(i), ref(ht[i]), ref(res)));
   }
 
   for (auto &t : filethreads)
@@ -114,7 +114,7 @@ int main(int argc, char **argv)
   */
 
   // Do not touch this, need for test cases
-  std::cout << result.get(testWord) << std::endl;
+  std::cout << res.get(testWord) << std::endl;
 
   return 0;
 }
