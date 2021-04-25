@@ -36,8 +36,9 @@ int main (int argc, char* argv[]) {
   float n = stoi(argv[4]);
   float intensity = stoi(argv[5]);
   int nbthreads = stoi(argv[6]);
-  int common_expression = ((b - a) / n);
+  int term = ((b - a) / n);
   float sum = 0.0;
+
   std::chrono::time_point<std::chrono::system_clock> begin = std::chrono::system_clock::now();
 
   SeqLoop s1;
@@ -47,31 +48,44 @@ int main (int argc, char* argv[]) {
       [&](float &tls) -> void {
         tls = 0.0;
       },
-      [&](int i, float &tls) -> void {
-        float x = (a + (i + 0.5) * ((b - a) / n));
+      [&](float &tls, int i) -> float 
+      {
+        float x = (a + (i + 0.5) * term);
         switch (functionid)
         {
-        case 1:
-          tls += f1(x, intensity);
-          break;
-        case 2:
-          tls += f2(x, intensity);
-          break;
-        case 3:
-          tls += f3(x, intensity);
-          break;
-        case 4:
-          tls += f4(x, intensity);
-          break;
+          case 1:
+            {
+              tls += f1(x, intensity);
+              break;
+            }
+          case 2:
+            {
+              tls += f2(x, intensity);
+              break;
+            }
+          case 3:
+            {
+              tls += f3(x, intensity);
+              break;
+            }
+          case 4:
+            {
+              tls += f4(x, intensity);
+              break;
+            }
+            default:
+              return 0;
         }
+        return tls;
       },
       [&](float &tls) -> void {
         sum += tls;
       });
 
-  std::cout << ((b - a) / n) * sum << endl;
-
   std::chrono::time_point<std::chrono::system_clock> end = std::chrono::system_clock::now();
+
+  std::cout << (term * sum) << endl;
+
   std::chrono::duration<double> elapsed_seconds = end - begin;
 
   std::cerr << elapsed_seconds.count() << std::endl;
