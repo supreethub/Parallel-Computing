@@ -1,0 +1,2 @@
+Question: Does the speedup look right?
+Answer: No. Not a lot of speedup achieved, and some threads take longer to execute causing bottleneck.
