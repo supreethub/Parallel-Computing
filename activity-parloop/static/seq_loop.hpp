@@ -15,7 +15,7 @@ public:
   /// f will be executed multiple times with parameters starting at
   /// beg, no greater than end, in inc increment. These execution may
   /// be in parallel
-  void parfor (size_t beg, size_t end, size_t inc,
+  void parafor (size_t beg, size_t end, size_t inc,
 	       std::function<void(int)> f) {
     for (size_t i=beg; i<end; i+= inc) {
       f(i);
@@ -53,7 +53,7 @@ public:
    
   void parfor (size_t beg, size_t end, size_t increment, size_t numthreads,
 	       std::function<void(TLS&)> before,
-	       std::function<void(TLS&, int)> f,
+	       std::function<void(int, TLS &)> f,
 	       std::function<void(TLS&)> after
 	       ) {
     TLS tls;
@@ -62,7 +62,7 @@ public:
     for (int t = 0; t<numthreads; t+=1)
     {
       before(thrTLS[t]);
-      threads.push_back(thread(&SeqLoop::parfor, this, t, end, numthreads, [&, t](int j) -> void {
+      threads.push_back(thread(&SeqLoop::parafor, this, t, end, numthreads, [&, t](int j) -> void {
         f(j, thrTLS[t]);
       }));
     }

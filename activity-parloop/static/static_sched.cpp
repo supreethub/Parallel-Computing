@@ -48,7 +48,7 @@ int main (int argc, char* argv[]) {
       [&](float &tls) -> void {
         tls = 0.0;
       },
-      [&](float &tls, int i) -> float 
+      [&](int i, float &tls) -> float 
       {
         float x = (a + (i + 0.5) * term);
         switch (functionid)
