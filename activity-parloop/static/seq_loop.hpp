@@ -42,46 +42,49 @@ public:
   
   
   
-  template<typename TLS>
+  // template<typename TLS>
   
-  float thread_action(TLS &tls, size_t i)
-  {
-    tls = f(tls, i);
-    return tls;
-  }
+  // float thread_action(TLS &tls, size_t i)
+  // {
+  //   tls = f(tls, i);
+  //   return tls;
+  // }
   template<typename TLS> 
    
-  void parfor (size_t beg, size_t end, size_t increment, size_t numthread,
+  void parfor (size_t beg, size_t end, size_t increment, size_t numthreads,
 	       std::function<void(TLS&)> before,
 	       std::function<float(TLS&, int)> f,
 	       std::function<void(TLS&)> after
 	       ) {
     TLS tls;
-    // vector<TLS> thr;
-
-    before(tls);    
-    // for (size_t i=beg; i<end; i+= increment) {
-    //   f(i, tls);
-    // }
+    vector<thread> threads;
+    vector<TLS> thrTLS(numthreads);
+    for (int t = 0; t<numthreads; t+=1)
+    {
+      before(thrTLS[t]);
+      threads.push_back(thread(&SeqLoop::parfor, this, t, end, numthreads, [&, t](int j) -> void {
+        f(j, thrTLS[t]);
+      }));
+    }
     
-    float sum = 0.0;
-    for (size_t t = 0;t<numthread; ++t){
-      tls = 0;
-      vector<thread> loop_thread;
-      for (size_t j = t;j<end; j+=numthread)
-      {
-	      loop_thread.push_back(thread(thread_action, ref(tls), j));
-      }
+    // float sum = 0.0;
+    // for (size_t t = 0;t<numthread; ++t){
+    //   tls = 0;
+    //   vector<thread> loop_thread;
+    // for (size_t j = t;j<end; j+=numthread)
+    // {
+    //   loop_thread.push_back(thread(thread_action, ref(tls), j));
+    // }
 
-      for (auto &t : loop_thread)
+      for (auto &t : threads)
       {
         t.join();
       }
 
-      sum+=tls; 
-    }
-
-    after(sum);
+      for (auto &t : thrTLS)
+      {
+        after(t);
+      }
   }
   
 };
