@@ -82,9 +82,11 @@ int main (int argc, char* argv[]) {
         sum += tls;
       });
 
-  std::chrono::time_point<std::chrono::system_clock> end = std::chrono::system_clock::now();
 
   std::cout << (term * sum) << endl;
+
+  std::chrono::time_point<std::chrono::system_clock> end = std::chrono::system_clock::now();
+
 
   std::chrono::duration<double> elapsed_seconds = end - begin;
 

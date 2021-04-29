@@ -53,7 +53,7 @@ public:
    
   void parfor (size_t beg, size_t end, size_t increment, size_t numthreads,
 	       std::function<void(TLS&)> before,
-	       std::function<float(TLS&, int)> f,
+	       std::function<void(TLS&, int)> f,
 	       std::function<void(TLS&)> after
 	       ) {
     TLS tls;
