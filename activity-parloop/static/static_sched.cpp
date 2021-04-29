@@ -48,35 +48,24 @@ int main (int argc, char* argv[]) {
       [&](float &tls) -> void {
         tls = 0.0;
       },
-      [&](int i, float &tls) -> float 
+      [&](int i, float &tls) -> void 
       {
         float x = (a + (i + 0.5) * term);
         switch (functionid)
         {
           case 1:
-            {
               tls += f1(x, intensity);
               break;
-            }
           case 2:
-            {
               tls += f2(x, intensity);
               break;
-            }
           case 3:
-            {
               tls += f3(x, intensity);
               break;
-            }
           case 4:
-            {
               tls += f4(x, intensity);
               break;
-            }
-            default:
-              return 0;
         }
-        return tls;
       },
       [&](float &tls) -> void {
         sum += tls;

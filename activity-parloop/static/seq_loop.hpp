@@ -55,10 +55,13 @@ public:
 	       std::function<void(TLS&)> before,
 	       std::function<void(int, TLS &)> f,
 	       std::function<void(TLS&)> after
-	       ) {
-    TLS tls;
+	       )
+    {
+
     vector<thread> threads;
     vector<TLS> thrTLS(numthreads);
+
+
     for (int t = 0; t<numthreads; t+=1)
     {
       before(thrTLS[t]);
