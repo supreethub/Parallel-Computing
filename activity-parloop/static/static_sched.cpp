@@ -36,7 +36,7 @@ int main (int argc, char* argv[]) {
   float n = stoi(argv[4]);
   float intensity = stoi(argv[5]);
   int nbthreads = stoi(argv[6]);
-  int term = ((b - a) / n);
+  float term = ((b - a) / n);
   float sum = 0.0;
 
   std::chrono::time_point<std::chrono::system_clock> begin = std::chrono::system_clock::now();
