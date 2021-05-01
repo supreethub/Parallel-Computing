@@ -40,15 +40,6 @@ public:
   /// Once the iterations are complete, each thread will execute after
   /// on the TLS object. No two thread can execute after at the same time.
   
-  
-  
-  // template<typename TLS>
-  
-  // float thread_action(TLS &tls, size_t i)
-  // {
-  //   tls = f(tls, i);
-  //   return tls;
-  // }
   template<typename TLS> 
    
   void parfor (size_t beg, size_t end, size_t increment, size_t numthreads,
@@ -70,14 +61,6 @@ public:
       }));
     }
     
-    // float sum = 0.0;
-    // for (size_t t = 0;t<numthread; ++t){
-    //   tls = 0;
-    //   vector<thread> loop_thread;
-    // for (size_t j = t;j<end; j+=numthread)
-    // {
-    //   loop_thread.push_back(thread(thread_action, ref(tls), j));
-    // }
 
       for (auto &t : threads)
       {
