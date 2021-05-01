@@ -1,2 +1,2 @@
 Question: Does the speedup look right?
-Answer: No. Not a lot of speedup achieved, and some threads take longer to execute causing bottleneck.
+Answer: For higher intensity, a fair amount of speedup is achieved but for low intensity values, the threads do not perform equal amount of tasks as expected to achieve any speedup as expected since they are statically distributed.
