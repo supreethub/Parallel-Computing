@@ -1,6 +1,7 @@
 CFLAGS=-O3 -std=c11 -fPIC -g 
 CXXFLAGS=-O3 -std=c++17 -fPIC -g 
-ARCHIVES=../libgen.a 
+ARCHIVES=../libgen.a
+LDFLAGS=-pthread 
 LD=g++
 
 
