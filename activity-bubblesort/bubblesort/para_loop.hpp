@@ -81,7 +81,7 @@ void staticFor(size_t beg, size_t end, size_t inc, size_t nthreads,
     for (int t = 0; t<numthreads; t+=1)
     {
       before(thrTLS[t]);
-      threads.push_back(thread(simpleFor, t, end, numthreads, [&, t](int j) -> void {
+      threads.push_back(thread(parafor, t, end, numthreads, [&, t](int j) -> void {
         f(j, thrTLS[t]);
       }));
     }
