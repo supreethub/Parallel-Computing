@@ -1,8 +1,21 @@
-CXXFLAGS=-std=c++14 -O3 -fopenmp -march=native -mtune=native
-LDFLAGS=-fopenmp
+CFLAGS = -O3 -Wall -Wexta -Wpedantic
 
-polynomial:
+
+main: main.cu
+	./Clean.sh
+	./Compile.sh
+	./Run.sh
+
+.PHONY: run clean
+
+compile: main.cu
+	./Compile.sh
+
+run:
+	./Run.sh
+
+queue:
+	./Queue.sh
 
 clean:
-	-rm polynomial
-
+	./Clean.sh
