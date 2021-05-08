@@ -1,21 +1,18 @@
-CFLAGS = -O3 -Wall -Wexta -Wpedantic
 
+CXXFLAGS=-std=c++11 -O3 -fopenmp -march=native -mtune=native
+LDFLAGS=-fopenmp 
+CUDAFLAGS=-O3 -arch=sm_37 -std=c++11
 
-main: main.cu
-	./Clean.sh
-	./Compile.sh
-	./Run.sh
+polynomial:
 
-.PHONY: run clean
+polynomial_gpu:
+	nvcc $(CUDAFLAGS) polynomial_gpu.cu -o polynomial_gpu
 
-compile: main.cu
-	./Compile.sh
+bench_cpu:
+	./queue_cpu.sh
 
-run:
-	./Run.sh
-
-queue:
-	./Queue.sh
+bench_gpu:
+	./queue_gpu.sh
 
 clean:
-	./Clean.sh
+	-rm polynomial polynomial_gpu
