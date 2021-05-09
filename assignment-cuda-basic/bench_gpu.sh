@@ -5,3 +5,6 @@
 ./polynomial_gpu 1000000000 100
 ./polynomial_gpu 1000000000 1000
 
+./polynomial_gpu 1 1
+./polynomial_gpu 1000000000 1
+./polynomial_gpu 1000000000 1000

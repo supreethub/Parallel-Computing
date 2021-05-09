@@ -45,8 +45,8 @@ int main (int argc, char* argv[]) {
   cudaMalloc(&xPointer, n*sizeof(float)); 
   cudaMalloc(&coeffPointer, (degree+1)*sizeof(float)); 
  
-  cudaMemcpy(xPointer, array, n*sizeof(float), cudaMemcpyHostToDevice);
-  cudaMemcpy(coeffPointer, poly, (degree+1)*sizeof(float), cudaMemcpyHostToDevice); 
+ // cudaMemcpy(xPointer, array, n*sizeof(float), cudaMemcpyHostToDevice);
+ // cudaMemcpy(coeffPointer, poly, (degree+1)*sizeof(float), cudaMemcpyHostToDevice); 
   std::chrono::time_point<std::chrono::system_clock> begin, end;
   begin = std::chrono::system_clock::now();
   
@@ -60,7 +60,7 @@ int main (int argc, char* argv[]) {
   if (err != cudaSuccess) 
     printf("Error: %s\n", cudaGetErrorString(err)); 
 
-  cudaMemcpy(array, xPointer, n*sizeof(float), cudaMemcpyDeviceToHost);
+  //cudaMemcpy(array, xPointer, n*sizeof(float), cudaMemcpyDeviceToHost);
   
   end = std::chrono::system_clock::now();
   std::chrono::duration<double> totaltime = (end-begin)/nbiter;
