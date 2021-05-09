@@ -26,11 +26,6 @@ extern "C" {
 
 int * temp;
 
-// void bubblesort(int arr[], int n, int granularity);
-// void print(int A[], int size);
-// void swap(int *x, int *y);
-// void pass(int arr[], int begin, int end);
-
 void print(int A[], int size)
 {
   int i;
@@ -52,18 +47,18 @@ void pass(int arr[], int begin, int end){
     }
 }
 
-void bubblesort(int arr[], int n, int granularity){
+void bubblesort(int arr[], int n){
 	
 	for(int i = 0; i < ceil(n/2); i++){
 		#pragma omp parallel
 		{
-			#pragma omp for schedule(dynamic,granularity)
+			#pragma omp for schedule(dynamic)
 			for(int i=0; i<n-1;i+=2){
 				if(arr[i]>arr[i+1])
 					swap(arr[i],arr[i+1]);
 			}
 			//#pragma omp barrier
-			#pragma omp for schedule(dynamic, granularity)
+			#pragma omp for schedule(dynamic)
 			for(int i=1; i<n-1;i+=2){
 				if(arr[i]>arr[i+1])
 					swap(arr[i],arr[i+1]);
@@ -75,31 +70,25 @@ void bubblesort(int arr[], int n, int granularity){
 }
 
 int main (int argc, char* argv[]) {
+
   int n = atoi(argv[1]);
   int nbthreads = atoi(argv[2]);
-  int granularity = atoi(argv[3]);
-  if(granularity%2 != 0)
-  	granularity-=1;
-  if(granularity<4)
-  	granularity=4;
-  if(granularity>n)
-  	granularity=n;
   
   omp_set_num_threads(nbthreads);
   //forces openmp to create the threads beforehand
-  // #pragma omp parallel
-  // {
-  //   int fd = open (argv[0], O_RDONLY);
-  //   if (fd != -1) {
-  //     close (fd);
-  //   }
-  //   else {
-  //     std::cerr<<"something is amiss"<<std::endl;
-  //   }
-  // }
+  #pragma omp parallel
+  {
+    int fd = open (argv[0], O_RDONLY);
+    if (fd != -1) {
+      close (fd);
+    }
+    else {
+      std::cerr<<"something is amiss"<<std::endl;
+    }
+  }
   
   if (argc < 3) {
-    std::cerr<<"Usage: "<<argv[0]<<" <n> <nbthreads> <granularity>"<<std::endl;
+    std::cerr<<"Usage: "<<argv[0]<<" <n> <nbthreads>"<<std::endl;
     return -1;
   }
 
@@ -112,7 +101,7 @@ int main (int argc, char* argv[]) {
   	temp[i] = arr[i];
   
   std::chrono::time_point<std::chrono::system_clock> begin = std::chrono::system_clock::now();
-  bubblesort(arr,n,granularity);
+  bubblesort(arr,n);
   std::chrono::time_point<std::chrono::system_clock> end = std::chrono::system_clock::now();
   std::chrono::duration<double> elapsed_seconds = end-begin;    
   std::cerr<<elapsed_seconds.count()<<std::endl;
@@ -122,5 +111,3 @@ int main (int argc, char* argv[]) {
 
   return 0;
 }
-
-
